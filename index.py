@@ -13,9 +13,15 @@ api = Api(app)
 boardListParser = reqparse.RequestParser()
 boardListParser.add_argument('board_name', type=str, help='Name of your board')
 class BoardList(Resource):
+    '''
+        Retrieve list of boards using GET
+    '''
     def get(self):
         return db.getBoards()
         
+    '''
+        Create a new board using POST
+    '''
     def post(self):
         args = boardListParser.parse_args()
         board = db.addBoard(args['board_name'])
@@ -23,10 +29,22 @@ class BoardList(Resource):
         return retval
 
 class Board(Resource):
-    pass
+    '''
+        Retrieve a single board using GET
+    '''
+    def get(self, boardId):
+        return db.getBoard(boardId)
+        
+    '''
+        Rename a board via PUT
+    '''
+    def put(self, boardId):
+        args = boardListParser.parse_args()
+        db.updateBoard(boardId, args['board_name'])
+        return db.getBoard(boardId)
 
 api.add_resource(BoardList,'/Boards')
-#api.add_resource(Board,'/Boards/<int:boardId>')
+api.add_resource(Board,'/Boards/<int:boardId>')
 
 '''
     Rename, listall
