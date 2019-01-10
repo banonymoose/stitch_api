@@ -13,7 +13,7 @@ class db_handler:
 
     #takes in cols as (col1, col2, ..., coln) and a single table
     #returns a list of rows, represented as dicts accessible by return[rowNum]['coln']
-    def basic_query(self, cols, table):
+    def basic_query(self, table, cols):
         queryString = "SELECT " + ", ".join(cols) + " FROM " + table
         #sys.stderr.write(queryString + '\n')
         cursor = cursor_handler(self.connection)
@@ -40,7 +40,7 @@ class db_handler:
      @return a string indicating the error if it failed, or succeeded.
     '''
     def insert_query(self, tablename, **kwargs):
-        keys = ["%s" % k for k in kwargs]
+        keys = ["%s" % k for k in kwargs.keys()]
         values = ["'%s'" % v for v in kwargs.values()]
         query = list()
         query.append("INSERT INTO %s (" % tablename)
@@ -61,7 +61,7 @@ class db_handler:
         # If the try worked it should return a success message
         return "Insert "+tablename+" successful."
 
-    # Generates an ID for an object by incrementing up one from the last ID
+    # Generates an ID for a record by incrementing up one from the last ID
     # in the table.
     def generate_id(self,tablename):
         # Generate the query to get the largest ID
@@ -79,17 +79,18 @@ class db_handler:
 
     @return an update query to be executed
     '''
-    def update_query(self, table, dictSet, where):
-        query = "UPDATE " + table + " SET "
-        setKeys = ["%s" % k for k in dictSet]
-        setVals = ["'%s'" % v if isinstance(v, str) else "%s" % v for v in dictSet.values()]
+    def update_query(self, table, dictSet, dictWhere):
+        query = "UPDATE " + table
+        
         # Append set
-        for n in range(len(setKeys)):
-            query += setKeys[n] + " = " + setVals[n]
-            if n != len(setKeys) - 1:
-                query += ", "
+        query += " SET "
+        query += ", ".join(" = ".join(item) for item in dictSet.items())
+        
         # Append where
-        query += " WHERE " + where
+        query += " WHERE "
+        query += " AND ".join(" = ".join(item) for item in dictWhere.items())
+        
+        sys.stderr.write(query + '\n')
 
         cursor = self.getCursorHandler()
         try:
@@ -102,11 +103,12 @@ class db_handler:
 
 
 
-    def matched_query(self, cols, table, match):
-        queryString = "select " + ", ".join(cols) + " from " + table + " where " + match
-        #sys.stderr.write(queryString + '\n')
+    def matched_query(self, table, cols, dictWhere):
+        query = "SELECT " + ", ".join(cols) + " FROM " + table + " WHERE "
+        query += " AND ".join(" = ".join(item) for item in dictWhere.items())
+        #sys.stderr.write(query + '\n')
         cursor = self.getCursorHandler()
-        cursor.execute(queryString)
+        cursor.execute(query)
         rows = cursor.fetchall()
         results = []
         for row in rows:
@@ -138,7 +140,7 @@ class cursor_handler:
     def execute(self, query):
         self.t = threading.Timer(3.0, self.connection.interrupt)
         self.t.start()
-        sys.stderr.write("DEBUG: connection to the database for querying will only last 3 seconds\n")
+        #sys.stderr.write("DEBUG: connection to the database for querying will only last 3 seconds\n")
         self.cursor.execute(query)
 
     def fetchone(self):
