@@ -13,7 +13,7 @@ class db_handler:
     #takes in cols as (col1, col2, ..., coln) and a single table
     #returns a list of rows, represented as dicts accessible by return[rowNum]['coln']
     def basic_query(self, cols, table):
-        queryString = "select " + ", ".join(cols) + " from " + table
+        queryString = "SELECT " + ", ".join(cols) + " FROM " + table
         #sys.stderr.write(queryString + '\n')
         cursor = cursor_handler(self.connection)
         cursor.execute(queryString)
@@ -47,9 +47,8 @@ class db_handler:
             sys.stderr.write(self.insert_query(tablename, **kwargs) + "\n")
             cursor.execute(self.insert_query(tablename, **kwargs))
         # If there's an error, print the error and notify that the insert failed
-        except cx_Oracle.DatabaseError as e:
-            error, = e.args
-            return str(error.code)+": "+ str(error.message)+"\n"+str(error.context)+"\nInsert failed."
+        except sqlite3.Error as e:
+            return "Database error: " + e.args[0]
         # If the try worked it should return a success message
         return "Insert "+tablename+" successful."
 
@@ -75,7 +74,7 @@ class db_handler:
     # in the table.
     def generate_id(self,tablename):
         # Generate the query to get the largest ID
-        max_ID_query = "SELECT count(*)\nFROM "+tablename
+        max_ID_query = "SELECT COUNT (*)\nFROM "+tablename
         cursor = self.getCursorHandler()
         # Return the maximum ID plus one
         cursor.execute(max_ID_query)
@@ -105,9 +104,8 @@ class db_handler:
         try:
             cursor.execute(query)
         # If there's an error, print the error and notify that the insert failed
-        except cx_Oracle.DatabaseError as e:
-            error, = e.args
-            return error.code + ": " + error.message + "\n" + error.context + "\nInsert failed."
+        except sqlite3.Error as e:
+            return "Database error: " + e.args[0]
 
         return "Update " + table + " successful."
 
@@ -139,10 +137,15 @@ class cursor_handler:
 
     #and now the destructor
     def __del__(self):
+        #cancel any remaining timer on cleanup
+        try:
+            self.t.cancel()
+        except NameError:
+            pass
         self.cursor.close()
 
     def execute(self, query):
-        self.t = threading.Timer(3.0, self.connection.cancel)
+        self.t = threading.Timer(3.0, self.connection.interrupt)
         self.t.start()
         sys.stderr.write("DEBUG: connection to the database for querying will only last 3 seconds\n")
         self.cursor.execute(query)
