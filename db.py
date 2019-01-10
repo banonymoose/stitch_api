@@ -8,6 +8,7 @@ class db_handler:
 
     #and now the destructor
     def __del__(self):
+        self.connection.commit()
         self.connection.close()
 
     #takes in cols as (col1, col2, ..., coln) and a single table
@@ -33,42 +34,32 @@ class db_handler:
      Takes the name of the table and insert the attributes and values
      stored in a dictionary.
      @param tablename is a string with the name of the table in the database
-     @param attrToValuesDict is a dictionary with the SQL attributes paired to
+     @param kwargs is a dictionary with the SQL attributes paired to
             the values for an instance of the object to be inserted
 
      @return a string indicating the error if it failed, or succeeded.
     '''
-    def insert_object(self, tablename, attrToValuesDict):
-
-        kwargs = attrToValuesDict
+    def insert_query(self, tablename, **kwargs):
+        keys = ["%s" % k for k in kwargs]
+        values = ["'%s'" % v for v in kwargs.values()]
+        query = list()
+        query.append("INSERT INTO %s (" % tablename)
+        query.append(", ".join(keys))
+        query.append(") VALUES (")
+        query.append(", ".join(values))
+        query.append(")")
+        query = "".join(query)
 
         cursor = self.getCursorHandler()
         try:
-            sys.stderr.write(self.insert_query(tablename, **kwargs) + "\n")
-            cursor.execute(self.insert_query(tablename, **kwargs))
+            sys.stderr.write(query + "\n")
+            cursor.execute(query)
+            
         # If there's an error, print the error and notify that the insert failed
         except sqlite3.Error as e:
             return "Database error: " + e.args[0]
         # If the try worked it should return a success message
         return "Insert "+tablename+" successful."
-
-    '''
-    Generates an INSERT INTO query to be executed for general cases.
-    @param table is the name of the table to be inserted into
-    @param **kwargs is a dictionary of attribute names : values for an instance of the object
-
-    @return a string query to be executed
-    '''
-    def insert_query(self, table, **kwargs):
-        keys = ["%s" % k for k in kwargs]
-        values = ["'%s'" % v for v in kwargs.values()]
-        query = list()
-        query.append("INSERT INTO %s (" % table)
-        query.append(", ".join(keys))
-        query.append(")VALUES (")
-        query.append(", ".join(values))
-        query.append(")")
-        return "".join(query)
 
     # Generates an ID for an object by incrementing up one from the last ID
     # in the table.
