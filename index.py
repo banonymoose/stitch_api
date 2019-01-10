@@ -1,46 +1,46 @@
 from flask import Flask, render_template, url_for, redirect, request, session
 from flask_restful import Resource, Api, reqparse
-import db
+from db import *
 app = Flask(__name__, static_url_path='/static')
 app.secret_key = 'thisIsNotVerySecure'
 api = Api(app)
 
-
+global_db = db_handler()
 
 '''
     Create, rename, archive, listall, individual
 '''
 boardListParser = reqparse.RequestParser()
 boardListParser.add_argument('board_name', type=str, help='Name of your board')
-class BoardList(Resource):
+class BoardList(Resource, boards_handler):
     '''
         Retrieve list of boards using GET
     '''
     def get(self):
-        return db.getBoards()
+        return self.getBoards()
         
     '''
         Create a new board using POST
     '''
     def post(self):
         args = boardListParser.parse_args()
-        board = db.addBoard(args['board_name'])
+        board = self.addBoard(args['board_name'])
         retval = (board, 201) if board else ({'error':'Bad input'}, 400)#placeholder error code
         return retval
 
-class Board(Resource):
+class Board(Resource, boards_handler):
     '''
         Retrieve a single board using GET
     '''
     def get(self, boardId):
-        return db.getBoard(boardId)
+        return self.getBoard(boardId)
         
     '''
         Rename a board via PUT
     '''
     def put(self, boardId):
         args = boardListParser.parse_args()
-        db.updateBoard(boardId, args['board_name'])
+        self.updateBoard(boardId, args['board_name'])
         return db.getBoard(boardId)
 
 api.add_resource(BoardList,'/Boards')

@@ -37,7 +37,7 @@ class db_handler:
      @param kwargs is a dictionary with the SQL attributes paired to
             the values for an instance of the object to be inserted
 
-     @return a string indicating the error if it failed, or succeeded.
+     @return True if successful, False is an error is encountered
     '''
     def insert_query(self, tablename, **kwargs):
         keys = ["%s" % k for k in kwargs.keys()]
@@ -55,11 +55,11 @@ class db_handler:
             sys.stderr.write(query + "\n")
             cursor.execute(query)
             
-        # If there's an error, print the error and notify that the insert failed
+        # If there's an error, print it to notify that the insert failed
         except sqlite3.Error as e:
-            return "Database error: " + e.args[0]
-        # If the try worked it should return a success message
-        return "Insert "+tablename+" successful."
+            sys.stderr.write("Database error: " + e.args[0])
+            return False
+        return True
 
     # Generates an ID for a record by incrementing up one from the last ID
     # in the table.
@@ -72,12 +72,12 @@ class db_handler:
         return cursor.fetchone()[0] + 1
 
     '''
-    Generates an UPDATE query to be executed for general cases.
+    General function for updating rows in a table
     @param table is the database table to be updated
     @param dictSet is a dictionary of attributes to be set mapped to corresponding values
     @param dictWhere is a dictionary of attributes mapped to values that will choose the item to set
 
-    @return an update query to be executed
+    @return True if successful, False if an error is encountered
     '''
     def update_query(self, table, dictSet, dictWhere):
         query = "UPDATE " + table
@@ -97,9 +97,9 @@ class db_handler:
             cursor.execute(query)
         # If there's an error, print the error and notify that the insert failed
         except sqlite3.Error as e:
-            return "Database error: " + e.args[0]
-
-        return "Update " + table + " successful."
+            sys.stderr.write("Database error: " + e.args[0])
+            return False
+        return True
 
 
 
@@ -157,11 +157,19 @@ class boards_handler(db_handler):
         db_handler.__del__(self)
         
     def getBoards(self):
-        boardList = self.basic_query(("id","name"), "boards")
+        boardList = self.basic_query('boards', ('board_id','board_name'))
         return boardList
 
-
-
+    def addBoard(self, boardName, **kwargs):
+        id = self.generate_id('boards')
+        success = self.insert_query('boards',
+            board_id = str(id),
+            board_name = boardName,
+            **kwargs
+        )#no response to errors yet, add this in later
+        retval = id if success else False
+        return retval
+        
 
 
 
