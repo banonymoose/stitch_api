@@ -68,7 +68,7 @@ class Board(Resource, boards_handler):
     '''
     def put(self, boardId):
         args = boardListParser.parse_args()
-        self.updateBoard(boardId, args['board_name'])
+        self.updateBoard(boardId, board_name=args['board_name'])
         return db.getBoard(boardId)
 
 api.add_resource(BoardList,'/Boards')
@@ -80,7 +80,7 @@ api.add_resource(Board,'/Boards/<int:boardId>')
     Child of Boards
 '''
 class Labels(Resource):
-    pass
+    pass#Functionality included in board handling
     
 '''
     Create, rename, archive, reorder, listall, individual

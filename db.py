@@ -55,13 +55,15 @@ class db_handler:
 
     # Generates an ID for a record by incrementing up one from the last ID
     # in the table.
-    def generate_id(self,tablename):
+    def generate_id(self, tablename, colname):
         # Generate the query to get the largest ID
-        max_ID_query = "SELECT COUNT (*)\nFROM "+tablename
+        max_ID_query = "SELECT MAX ({})\nFROM {}".format(colname, tablename)
         cursor = self.getCursorHandler()
         # Return the maximum ID plus one
         cursor.execute(max_ID_query)
-        return cursor.fetchone()[0] + 1
+        data = cursor.fetchone()[0]
+        id = 1 if data is None else data+1
+        return id
 
     '''
     General function for updating rows in a table
@@ -158,7 +160,7 @@ class boards_handler(db_handler):
         return board
 
     def addBoard(self, boardName, **kwargs):
-        id = self.generate_id('boards')
+        id = self.generate_id('boards', 'board_id')
         success = self.insert_query('boards',
             board_id = str(id),
             board_name = boardName,
@@ -171,8 +173,28 @@ class boards_handler(db_handler):
         success = self.update_query('boards', kwargs, {'board_id':str(boardId)})
         return self.getBoard(boardId)
         
-
-
+class lists_handler(db_handler):
+    def getLists(self, boardId):
+        lists = self.matched_query('lists', ('list_id', 'list_name'), {'board_id':str(boardId)})
+        return lists
+        
+    def getList(self, listId):
+        list = self.matched_query('lists', ('list_id', 'list_name'), {'list_id':str(listId)})[0]
+        return list
+        
+    def addList(self, listName, boardId):
+        id = self.generate_id('lists', 'list_id')
+        success = self.insert_query('lists',
+            list_id = str(id),
+            board_id = str(boardId),
+            list_name = listName
+        )
+        retval = id if success else False
+        return retval
+        
+    def updateList(self, listId, **kwargs):
+        success = self.update_query('lists', kwargs, {'list_id':str(listId)})
+        return self.getList(listId)
 """
 '''
 Temporary in-memory structures to get the API functioning before integrating
