@@ -157,7 +157,7 @@ class boards_handler(db_handler):
         
     def getBoard(self, boardId):
         board = self.matched_query('boards', ('board_id','board_name','label1','label2','label3','label4','label5','label6'), {'board_id':str(boardId)})[0]
-        return board#need to also return a list of list IDs?
+        return board
 
     def addBoard(self, boardName, **kwargs):
         id = self.generate_id('boards', 'board_id')
@@ -173,6 +173,9 @@ class boards_handler(db_handler):
         success = self.update_query('boards', kwargs, {'board_id':str(boardId)})
         return self.getBoard(boardId)
         
+    def id_to_url(self, boardId):
+        return '/Boards/{}'.format(boardId)
+        
 class lists_handler(db_handler):
     def getLists(self, boardId):
         lists = self.matched_query('lists', ('list_id', 'list_name'), {'board_id':str(boardId)})
@@ -180,7 +183,7 @@ class lists_handler(db_handler):
         
     def getList(self, listId):
         list = self.matched_query('lists', ('list_id', 'list_name'), {'list_id':str(listId)})[0]
-        return list#need to also return a list of card IDs?
+        return list
         
     def addList(self, listName, boardId):
         id = self.generate_id('lists', 'list_id')
@@ -195,6 +198,9 @@ class lists_handler(db_handler):
     def updateList(self, listId, **kwargs):
         success = self.update_query('lists', kwargs, {'list_id':str(listId)})
         return self.getList(listId)
+        
+    def id_to_url(self, listId):
+        return '/Lists/{}'.format(listId)
 """
 '''
 Temporary in-memory structures to get the API functioning before integrating

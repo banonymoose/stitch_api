@@ -46,15 +46,7 @@ class Board(Resource, boards_handler):
         Retrieve a single board using GET
     '''
     def get(self, boardId):
-        return self.getBoard(boardId)
-        
-    '''
-        Rename a board via PUT
-    '''
-    def put(self, boardId):
-        restArgs = boardListParser.parse_args()
-        self.updateBoard(boardId, board_name=restArgs['board_name'])
-        return db.getBoard(boardId)
+        return self.getBoard(boardId)#need to append links to lists
         
     '''
         Rename a board and/or labels using PUT
@@ -106,11 +98,17 @@ class Lists(Resource, lists_handler):
     
 class List(Resource):
     def get(self, listId):
+        return self.getList(listId)#need to append links to cards
+        
+    def put(self, listId):
+        restArgs = listsParser.parse_args()
+        list = self.updateList(listId, list_name=restArgs['list_name'])
+        retval = (list, 200) if list else ({'error':'Bad input'}, 400)#placeholder error code
+        return retval
         
 
-
 api.add_resource(Lists,'/Lists/<int:boardId>')
-api.add_resource(List,'/Lists/<int:listId>')
+api.add_resource(List,'/Lists/<int:boardId>/<int:listId>')
     
 '''
     Create, rename, archive, reorder, move, assignmember, assignlabels, listall, individual
