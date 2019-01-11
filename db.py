@@ -51,15 +51,7 @@ class db_handler:
         query = "".join(query)
 
         cursor = self.getCursorHandler()
-        try:
-            sys.stderr.write(query + "\n")
-            cursor.execute(query)
-            
-        # If there's an error, print it to notify that the insert failed
-        except sqlite3.Error as e:
-            sys.stderr.write("Database error: " + e.args[0])
-            return False
-        return True
+        return cursor.execute(query)
 
     # Generates an ID for a record by incrementing up one from the last ID
     # in the table.
@@ -84,28 +76,20 @@ class db_handler:
         
         # Append set
         query += " SET "
-        query += ", ".join(" = ".join(item) for item in dictSet.items())
+        query += self.joinDict(", ", " = ", dictSet)
         
         # Append where
         query += " WHERE "
-        query += " AND ".join(" = ".join(item) for item in dictWhere.items())
+        query += self.joinDict(" AND ", " = ", dictWhere)
         
-        sys.stderr.write(query + '\n')
+        #sys.stderr.write(query + '\n')
 
         cursor = self.getCursorHandler()
-        try:
-            cursor.execute(query)
-        # If there's an error, print the error and notify that the insert failed
-        except sqlite3.Error as e:
-            sys.stderr.write("Database error: " + e.args[0])
-            return False
-        return True
-
-
+        return cursor.execute(query)
 
     def matched_query(self, table, cols, dictWhere):
         query = "SELECT " + ", ".join(cols) + " FROM " + table + " WHERE "
-        query += " AND ".join(" = ".join(item) for item in dictWhere.items())
+        query += self.joinDict(" AND ", " = ", dictWhere)
         #sys.stderr.write(query + '\n')
         cursor = self.getCursorHandler()
         cursor.execute(query)
@@ -121,6 +105,9 @@ class db_handler:
 
     def getCursorHandler(self):
         return cursor_handler(self.connection)
+        
+    def joinDict(self, outerStr, innerStr, jDict):
+        return outerStr.join(innerStr.join(("{}".format(item[0]),"'{}'".format(item[1]))) for item in jDict.items())
 
 class cursor_handler:
     #define the constructor
@@ -141,7 +128,13 @@ class cursor_handler:
         self.t = threading.Timer(3.0, self.connection.interrupt)
         self.t.start()
         #sys.stderr.write("DEBUG: connection to the database for querying will only last 3 seconds\n")
-        self.cursor.execute(query)
+        try:
+            self.cursor.execute(query)
+        except sqlite3.Error as e:
+            self.t.cancel()
+            sys.stderr.write("Database error: " + e.args[0])
+            return False
+        return True
 
     def fetchone(self):
         return self.cursor.fetchone()
@@ -159,6 +152,10 @@ class boards_handler(db_handler):
     def getBoards(self):
         boardList = self.basic_query('boards', ('board_id','board_name'))
         return boardList
+        
+    def getBoard(self, boardId):
+        board = self.matched_query('boards', ('board_id','board_name','label1','label2','label3','label4','label5','label6'), {'board_id':str(boardId)})[0]
+        return board
 
     def addBoard(self, boardName, **kwargs):
         id = self.generate_id('boards')
@@ -170,7 +167,10 @@ class boards_handler(db_handler):
         retval = id if success else False
         return retval
         
-
+    def updateBoard(self, boardId, **kwargs):
+        success = self.update_query('boards', kwargs, {'board_id':str(boardId)})
+        return self.getBoard(boardId)
+        
 
 
 """
