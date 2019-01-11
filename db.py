@@ -157,7 +157,7 @@ class boards_handler(db_handler):
         
     def getBoard(self, boardId):
         board = self.matched_query('boards', ('board_id','board_name','label1','label2','label3','label4','label5','label6'), {'board_id':str(boardId)})[0]
-        return board
+        return board#need to also return a list of list IDs?
 
     def addBoard(self, boardName, **kwargs):
         id = self.generate_id('boards', 'board_id')
@@ -180,7 +180,7 @@ class lists_handler(db_handler):
         
     def getList(self, listId):
         list = self.matched_query('lists', ('list_id', 'list_name'), {'list_id':str(listId)})[0]
-        return list
+        return list#need to also return a list of card IDs?
         
     def addList(self, listName, boardId):
         id = self.generate_id('lists', 'list_id')

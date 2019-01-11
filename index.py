@@ -11,8 +11,8 @@ global_db = db_handler()
     Create, rename, archive, listall, individual
 '''
 boardListParser = reqparse.RequestParser()
-boardListParser.add_argument('board_id', type=int, help='ID of your board')
-boardListParser.add_argument('board_name', type=str, help='Name of your board')
+boardListParser.add_argument('board_id', type=int, help='ID of the board')
+boardListParser.add_argument('board_name', type=str, help='Name of the board')
 boardListParser.add_argument('label1', type=str, help='Card label 1')
 boardListParser.add_argument('label2', type=str, help='Card label 2')
 boardListParser.add_argument('label3', type=str, help='Card label 3')
@@ -36,23 +36,8 @@ class BoardList(Resource, boards_handler):
         for i in range(1,7):
             label = 'label{}'.format(i)
             if label in restArgs: addArgs[label] = restArgs[label]
-        for item in restArgs.items(): sys.stderr.write('{}, {}\n'.format(item[0],item[1]))
-        board = self.addBoard(restArgs['board_name'], **addArgs)
-        retval = (board, 201) if board else ({'error':'Bad input'}, 400)#placeholder error code
-        return retval
-        
-    '''
-        Rename a board or labels using PUT
-    '''
-    def put(self):
-        restArgs = boardListParser.parse_args()
-        putArgs = {}
-        if 'board_name' in restArgs: putArgs['board_name'] = restArgs['board_name']
-        for i in range(1,7):
-            label = 'label{}'.format(i)
-            if label in restArgs: putArgs[label] = restArgs[label]
         #for item in restArgs.items(): sys.stderr.write('{}, {}\n'.format(item[0],item[1]))
-        board = self.updateBoard(restArgs['board_id'], **putArgs)
+        board = self.addBoard(restArgs['board_name'], **addArgs)
         retval = (board, 201) if board else ({'error':'Bad input'}, 400)#placeholder error code
         return retval
 
@@ -67,9 +52,24 @@ class Board(Resource, boards_handler):
         Rename a board via PUT
     '''
     def put(self, boardId):
-        args = boardListParser.parse_args()
-        self.updateBoard(boardId, board_name=args['board_name'])
+        restArgs = boardListParser.parse_args()
+        self.updateBoard(boardId, board_name=restArgs['board_name'])
         return db.getBoard(boardId)
+        
+    '''
+        Rename a board and/or labels using PUT
+    '''
+    def put(self, boardId):
+        restArgs = boardListParser.parse_args()
+        putArgs = {}
+        if 'board_name' in restArgs: putArgs['board_name'] = restArgs['board_name']
+        for i in range(1,7):
+            label = 'label{}'.format(i)
+            if label in restArgs: putArgs[label] = restArgs[label]
+        #for item in restArgs.items(): sys.stderr.write('{}, {}\n'.format(item[0],item[1]))
+        board = self.updateBoard(boardId, **putArgs)
+        retval = (board, 200) if board else ({'error':'Bad input'}, 400)#placeholder error code
+        return retval
 
 api.add_resource(BoardList,'/Boards')
 api.add_resource(Board,'/Boards/<int:boardId>')
@@ -87,8 +87,30 @@ class Labels(Resource):
     
     Child of Boards
 '''
-class Lists(Resource):
-    pass
+listsParser = reqparse.RequestParser()
+listsParser.add_argument('list_id', type=int, help='ID of the list')
+listsParser.add_argument('list_name', type=str, help='Name of the list')
+
+class Lists(Resource, lists_handler):
+    def get(self, boardId):
+        restArgs = listsParser.parse_args()
+        return self.getLists(boardId)
+        
+    def post(self, boardId):
+        restArgs = listsParser.parse_args()
+        #for item in restArgs.items(): sys.stderr.write('{}, {}\n'.format(item[0],item[1]))
+        list = self.addList(restArgs['list_name'], boardId)
+        retval = (list, 201) if board else ({'error':'Bad input'}, 400)#placeholder error code
+        return retval
+        
+    
+class List(Resource):
+    def get(self, listId):
+        
+
+
+api.add_resource(Lists,'/Lists/<int:boardId>')
+api.add_resource(List,'/Lists/<int:listId>')
     
 '''
     Create, rename, archive, reorder, move, assignmember, assignlabels, listall, individual
