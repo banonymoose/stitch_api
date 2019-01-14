@@ -85,7 +85,6 @@ listsParser.add_argument('list_name', type=str, help='Name of the list')
 
 class Lists(Resource, lists_handler):
     def get(self, boardId):
-        restArgs = listsParser.parse_args()
         return self.getLists(boardId)
         
     def post(self, boardId):
@@ -96,13 +95,17 @@ class Lists(Resource, lists_handler):
         return retval
         
     
-class List(Resource):
+class List(Resource, lists_handler):
     def get(self, listId):
         return self.getList(listId)#need to append links to cards
         
     def put(self, listId):
         restArgs = listsParser.parse_args()
-        list = self.updateList(listId, list_name=restArgs['list_name'])
+        putArgs = {}
+        
+        if 'list_name' in restArgs: putArgs['list_name'] = restArgs['list_name']
+        
+        list = self.updateList(listId, **putArgs)
         retval = (list, 200) if list else ({'error':'Bad input'}, 400)#placeholder error code
         return retval
         
@@ -115,8 +118,41 @@ api.add_resource(List,'/Lists/<int:boardId>/<int:listId>')
     
     Child of Lists
 '''
-class Cards(Resource):
-    pass
+cardsParser = reqparse.RequestParser()
+cardsParser.add_argument('card_id', type=int, help='ID of the card')
+cardsParser.add_argument('description', type=str, help='Description of the card')
+cardsParser.add_argument('due_date', type=str, help='Due date of the card (ISO 8601 format)')
+cardsParser.add_argument('label', type=int, help='Label ID for the card')
+
+class Cards(Resource, cards_handler):
+    def get(self, listId):
+        return self.getCards(listId)
+        
+    def post(self, listId):
+        restArgs = cardsParser.parse_args()
+        card = self.addCard(listId,
+            description=restArgs['description'],
+            duedate=restArgs['due_date'],
+            label=None if 'label' not in restArgs else restArts['label']
+        )
+        retval = (card, 201) if card else ({'error':'Bad input'}, 400)#placeholder error code
+        return retval
+        
+class Card(Resource, cards_handler):
+    def get(self, cardId):
+        return self.getCard(cardId)
+        
+    def put(self, cardId):
+        restArgs = cardsParser.parse_args()
+        putArgs = {}
+        
+        if 'description' in restArgs: putArgs['description'] = restArgs['description']
+        if 'duedate' in restArgs: putArgs['duedate'] = restArgs['duedate']
+        if 'label' in restArgs: putArgs['label'] = restArgs['label']
+        
+        card = self.updateCard(cardId, **putArgs)
+        retval = (list, 200) if list else ({'error':'Bad input'}, 400)#placeholder error code
+        return retval
     
 '''
     Create, rename, archive, listall, individual

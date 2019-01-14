@@ -201,6 +201,63 @@ class lists_handler(db_handler):
         
     def id_to_url(self, listId):
         return '/Lists/{}'.format(listId)
+
+class cards_handler(db_handler):
+    def getCards(self, listId):
+        cards = self.matched_query('cards', ('card_id', 'description', 'duedate', 'label'), {'list_id':str(listId)})
+        return cards
+        
+    def getCard(self, cardId):
+        card = self.matched_query('cards', ('card_id', 'description', 'duedate', 'label'), {'card_id':str(cardId)})
+        return card
+        
+    def addCard(self, listId, **kwargs):
+        id = self.generate_id('cards', 'card_id')
+        success = self.insert_query('cards',
+            card_id = str(id),
+            list_id = str(listId),
+            **kwargs
+        )#no response to errors yet, add this in later
+        retval = id if success else False
+        return retval
+        
+    def updateCard(self, cardId, **kwargs):
+        success = self.update_query('cards', kwargs, {'card_id':str(cardId)})
+        return self.getCard(cardId)
+        
+    def id_to_url(self, cardId):
+        return '/Cards/{}'.format(cardId)
+        
+class members_handler(db_handler):
+    def getMembers(self):
+        return self.basic_query('members', ('member_id', 'member_name'))
+        
+    def addMember(self, memberName):
+        id = self.generate_id('members', 'member_id')
+        success = self.insert_query('members',
+            member_id = str(id),
+            member_name = memberName
+        )
+        retval = id if success else False
+        return retval
+        
+    def updateMember(self, memberId, **kwargs):
+        success = self.update_query('members', kwargs, {'member_id':str(memberId)})
+        return self.getMember(memberId)
+        
+    def getMemberships(self, memberId):
+        memberships = self.matched_query('memberships', ('member_id', 'board_id'), {'member_id':str(memberId)})
+        return memberships
+        
+    def addMembership(self, memberId, boardId):
+        success = self.insert_query('memberships',
+            member_id = memberId,
+            board_id = boardId
+        )
+        retval = True if success else False
+        return retval
+        
+    
 """
 '''
 Temporary in-memory structures to get the API functioning before integrating
