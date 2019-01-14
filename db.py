@@ -11,13 +11,45 @@ class db_handler:
         self.connection.commit()
         self.connection.close()
 
-    #takes in cols as (col1, col2, ..., coln) and a single table
-    #returns a list of rows, represented as dicts accessible by return[rowNum]['coln']
+    '''
+     General function for querying a table.
+     Takes the name of the table and a tuple of column names to retrieve
+     @param tablename is a string with the name of the table in the database
+     @param cols is a tuple with the names of colums to be retrieved
+
+     @return A list of records represented as dicts
+    '''
     def basic_query(self, table, cols):
         queryString = "SELECT " + ", ".join(cols) + " FROM " + table
         #sys.stderr.write(queryString + '\n')
         cursor = cursor_handler(self.connection)
         cursor.execute(queryString)
+        rows = cursor.fetchall()
+        results = []
+        for row in rows:
+            #sys.stderr.write(row + '\n')
+            resultDict = {}
+            for colNum, value in enumerate(row):
+                resultDict[cols[colNum]] = value
+            results.append(resultDict)
+        return results
+    
+    '''
+     General function for querying a table.
+     Takes the name of the table, a tuple of column names to retrieve and
+     a dictionary of column:equalto pairs
+     @param tablename is a string with the name of the table in the database
+     @param cols is a tuple with the names of colums to be retrieved
+     @param dictWhere is a dict of column:equalto pairs used as conditionals
+
+     @return A list of matching records represented as dicts
+    '''
+    def matched_query(self, table, cols, dictWhere):
+        query = "SELECT " + ", ".join(cols) + " FROM " + table + " WHERE "
+        query += self.joinDict(" AND ", " = ", dictWhere)
+        #sys.stderr.write(query + '\n')
+        cursor = self.getCursorHandler()
+        cursor.execute(query)
         rows = cursor.fetchall()
         results = []
         for row in rows:
@@ -89,25 +121,11 @@ class db_handler:
         cursor = self.getCursorHandler()
         return cursor.execute(query)
 
-    def matched_query(self, table, cols, dictWhere):
-        query = "SELECT " + ", ".join(cols) + " FROM " + table + " WHERE "
-        query += self.joinDict(" AND ", " = ", dictWhere)
-        #sys.stderr.write(query + '\n')
-        cursor = self.getCursorHandler()
-        cursor.execute(query)
-        rows = cursor.fetchall()
-        results = []
-        for row in rows:
-            #sys.stderr.write(row + '\n')
-            resultDict = {}
-            for colNum, value in enumerate(row):
-                resultDict[cols[colNum]] = value
-            results.append(resultDict)
-        return results
-
+    #General method to obtain a cursor
     def getCursorHandler(self):
         return cursor_handler(self.connection)
         
+    #General helper function, zip up conditions into a query string
     def joinDict(self, outerStr, innerStr, jDict):
         return outerStr.join(innerStr.join(("{}".format(item[0]),"'{}'".format(item[1]))) for item in jDict.items())
 
@@ -144,6 +162,8 @@ class cursor_handler:
     def fetchall(self):
         return self.cursor.fetchall()
 
+
+#Application-specific classes
 class boards_handler(db_handler):
     def __init__(self):
         db_handler.__init__(self)
@@ -256,45 +276,3 @@ class members_handler(db_handler):
         )
         retval = True if success else False
         return retval
-        
-    
-"""
-'''
-Temporary in-memory structures to get the API functioning before integrating
-a MySQL or sqlite database. There is no persistence here, it's just to get the
-basics going!
-'''
-boardDicts = {1:{
-    'lists':{
-        '1':{
-            'cards':{
-                '1':{
-                    'title':'Test Card',
-                    'description':'A test card',
-                    'duedate':'placeholder',
-                    'label':None,
-                    'members':[]
-                }
-            }
-        }
-    },
-    'members':None
-}}
-
-def getBoards():
-    return boardDicts
-
-def addBoard(boardName):
-    id = len(boardDicts.keys())+1
-    boardDicts[id] = {
-        'name':boardName,
-        'lists':{
-            '1':{
-                'title':'Default List',
-                'cards':{}
-                }
-        },
-        'members':None
-    }
-    return boardDicts[id]
-"""
