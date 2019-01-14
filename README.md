@@ -23,6 +23,8 @@ General notes:
    using one!
    
 Dependencies:
- - flask
- - flask_restful
+ - flask (if pipenv not used)
+ - flask_restful (if pipenv not used)
  - pipenv
+
+Run it with `pipenv run python index.py`, then use curl to interact
