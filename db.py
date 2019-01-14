@@ -193,9 +193,6 @@ class boards_handler(db_handler):
         success = self.update_query('boards', kwargs, {'board_id':str(boardId)})
         return self.getBoard(boardId)
         
-    def id_to_url(self, boardId):
-        return '/Boards/{}'.format(boardId)
-        
 class lists_handler(db_handler):
     def getLists(self, boardId):
         lists = self.matched_query('lists', ('list_id', 'list_name'), {'board_id':str(boardId)})
@@ -218,9 +215,6 @@ class lists_handler(db_handler):
     def updateList(self, listId, **kwargs):
         success = self.update_query('lists', kwargs, {'list_id':str(listId)})
         return self.getList(listId)
-        
-    def id_to_url(self, listId):
-        return '/Lists/{}'.format(listId)
 
 class cards_handler(db_handler):
     def getCards(self, listId):
@@ -244,9 +238,6 @@ class cards_handler(db_handler):
     def updateCard(self, cardId, **kwargs):
         success = self.update_query('cards', kwargs, {'card_id':str(cardId)})
         return self.getCard(cardId)
-        
-    def id_to_url(self, cardId):
-        return '/Cards/{}'.format(cardId)
         
 class members_handler(db_handler):
     def getMembers(self):
